@@ -1,0 +1,1071 @@
+{UTF-8}
+Avoided areation electricity=O2 from electrolysis used / Aeration efficiency
+	~	kWh/H
+	~		|
+
+Integrated system electricity=Aeration electricity consumption + Electrolyser electricity consumption
+	~	kWh/H
+	~		|
+
+Crematorium activity factor=Mortality seasonal index lookup(Hours of year) * (1 + Weekly mortality noise\
+		)
+	~	Dmnl
+	~		|
+
+Crematorium demand= Crematorium hourly consumption * Crematorium operating
+	~	kg/H
+	~	 MODIFY: was the constant 10.58 (and the S1 growth formula in the comment, \
+		no longer needed).
+	|
+
+Crematorium hourly consumption=10.58
+	~	kg/H
+	~	 H2 consumption per operating hour (H2HT). This replaces the verification \
+		scenarios constant "Crematorium demand = 10.58".
+	|
+
+Hour of day=MODULO ( Time , 24 )
+	~	H
+	~		|
+
+Average cremations per day=9
+	~	Cremation
+	~	H2Hub Twente: typically 8-10 per day
+	|
+
+Hours of year=MODULO ( Time , 8736 )
+	~	H
+	~		|
+
+Crematorium operating hours per day=Average cremations per day * Crematorium activity factor
+	        * H2 per cremation / Crematorium hourly consumption
+	~	H
+	~	About 17 h on average (13.8-19 h over the year).
+	|
+
+H2 per cremation=20
+	~	kg/Cremation
+	~	H2Hub Twente Curren estimation
+	|
+
+Noise seed=1
+	~	Dmnl
+	~		|
+
+Crematorium opening hour=5
+	~	H
+	~	Opening time at the day
+	|
+
+Mortality noise sd=0.0436
+	~	Dmnl
+	~		|
+
+Mortality seasonal index lookup([(0,0.8)-(8736,1.2)],(0,1.1463), (168,1.1626), (336,1.1411\
+		), (504,1.1561), (672,1.1589), (840,1.1394), (1008,1.146), (1176,1.1521), (1344,1.1341\
+		), (1512,1.1426), (1680,1.0977), (1848,1.0656), (2016,1.0457), (2184,1.0116), (2352\
+		,0.9855), (2520,0.9818), (2688,0.961), (2856,0.9504), (3024,0.9494), (3192,0.9405),\
+		 (3360,0.9406), (3528,0.9289), (3696,0.9187), (3864,0.9238), (4032,0.917), (4200,0.9231\
+		), (4368,0.9337), (4536,0.9149), (4704,0.9104), (4872,0.9181), (5040,0.8937), (5208\
+		,0.901), (5376,0.9024), (5544,0.9033), (5712,0.9038), (5880,0.9016), (6048,0.9116),\
+		 (6216,0.9181), (6384,0.9387), (6552,0.9554), (6720,0.9795), (6888,0.9684), (7056,0.9837\
+		), (7224,0.9827), (7392,1.001), (7560,0.9961), (7728,1.0088), (7896,1.0233), (8064,\
+		1.044), (8232,1.0617), (8400,1.0785), (8568,1.045), (8736,1.1463))
+	~	Dmnl
+	~	Data obtained from time series data of deaths (see Excel)
+	|
+
+Weekly mortality noise=SAMPLE IF TRUE(MODULO(Time, 168) = 0, RANDOM NORMAL(-3 * Mortality noise sd\
+		, 3 * Mortality noise sd
+	, 0, Mortality noise sd, Noise seed), 0)
+	~	Dmnl
+	~		|
+
+Operating factor=Electrolizer H2 production BV/Electrolyzer capacity
+	~	Dmnl
+	~		|
+
+Crematorium operating days per week=6
+	~	Dmnl
+	~	Assuming the crematorium opens 6 days per week
+	|
+
+Crematorium operating=IF THEN ELSE(
+	        Day of week < Crematorium operating days per week :AND: Hour of day >= Crematorium opening hour\
+		,
+	        max(0, min(1, Crematorium opening hour + Crematorium operating hours per day\
+		 - Hour of day)),
+	        0)
+	~	Dmnl
+	~	 Fraction of each hour in operation (1 during full hours, between 0 and 1 \
+		in the last hour).
+	|
+
+Day of week=MODULO(INTEGER(Time / 24), 7)
+	~	Dmnl
+	~	0 = Monday ... 6 = Sunday
+	|
+
+Electrolizer H2 production BV=1
+	~	kg/H
+	~		|
+
+Electrolyzer capacity=1.105
+	~	kg/H
+	~		|
+
+Electrolyzer capacity multiplier=8
+	~	Dmnl
+	~		|
+
+Electrolyzer throughput=Electrolyzer capacity*Operating factor*Electrolyzer capacity multiplier
+	~	kg/H
+	~		|
+
+recycled H2O in=Recycled water supply*water density*Recycled water allocation factor
+	~	kg/H
+	~		|
+
+Recycled water allocation factor=1
+	~	Dmnl
+	~	For scenario 2.
+		max(0, 1 - RAMP(1/336, 0, 336))
+	|
+
+Electricity attributed to H2 production=WWTP electricity allocated to electrolisys+Electrolyser electricity consumption
+	~	kWh/H
+	~		|
+
+WWTP electricity allocated to electrolisys=Aeration electricity consumption*recycled H2O in\
+		/(Treated water flow*water density)
+	~	kWh/H
+	~		|
+
+Bakery demand=1
+	~	kg/H
+	~		|
+
+actual H2O consumption=H2 produced in*"H2O/H2 mass yield ratio"
+	~	kg/H
+	~		|
+
+Potable H2O share=IF THEN ELSE(
+	    actual H2O consumption > 0,
+	    potable H2O supplied / actual H2O consumption,
+	    0
+	)
+	~	Dmnl
+	~		|
+
+Electrolyser electricity consumption=H2 produced in*Specific electrolyser electricity consumption
+	~	kWh/H
+	~		|
+
+Potential H2O consumption=Potential H2 production*"H2O/H2 mass yield ratio"
+	~	kg/H
+	~		|
+
+Internal H2 supplied=min(Total H2 demand, H2 Storage/delivery time)
+	~	kg/H
+	~		|
+
+"Internal hydrogen supply contribution (%)"=100*Internal H2 supplied/Total H2 demand
+	~	Dmnl
+	~		|
+
+External H2 supply=Outsourced H2 supplied
+	~	kg/H
+	~		|
+
+"External hydrogen dependency (%)"=100*External H2 supply/Total H2 demand
+	~	Dmnl
+	~		|
+
+Cumulative met demand H2= INTEG (Total H2 supplied,
+		0)
+	~	kg
+	~		|
+
+H2 service level=IF THEN ELSE(Cumulative met demand H2 + Cumulative unmet demand H2 >\
+		 0,
+	    Cumulative met demand H2 / (Cumulative met demand H2 + Cumulative unmet demand H2\
+		), 1)
+	~	Dmnl
+	~		|
+
+O2 produced=H2 produced in*"O2/H2 mass yield ratio"
+	~	kg/H
+	~		|
+
+H2 demanded out=Internal H2 supplied
+	~	kg/H
+	~		|
+
+Potential H2 production=min(
+	    Electrolyzer throughput,
+	    max(
+	        0,
+	        (Max H2 Storage Capacity-H2 Storage)/TIME STEP
+	        + Internal H2 supplied
+	    )
+	)
+	~	kg/H
+	~		|
+
+Cumulative outsourced H2= INTEG (Outsourced H2 delivery,
+		0)
+	~	kg
+	~		|
+
+Cumulative unmet demand H2= INTEG (Unmet H2 demand,
+		0)
+	~	kg
+	~		|
+
+delivery time=1
+	~	H
+	~		|
+
+Residual H2 demand=max(0,Total H2 demand-Internal H2 supplied)
+	~	kg/H
+	~		|
+
+Total H2 demand=Bakery demand+Crematorium demand
+	~	kg/H
+	~		|
+
+Unmet H2 demand=max(0,Total H2 demand-Total H2 supplied)
+	~	kg/H
+	~		|
+
+H2 produced in=min(
+	    Potential H2 production,
+	    available H2O for electrolysis/"H2O/H2 mass yield ratio"
+	)
+	~	kg/H
+	~		|
+
+H2 truck payload=400
+	~	kg/truck
+	~		|
+
+H2 trucks per order=min(Maximum feasible H2 trucks,Required H2 trucks)
+	~	truck
+	~		|
+
+H2 in transit out=Outsourced H2 delivery
+	~	kg/H
+	~		|
+
+Required H2 trucks=INTEGER(Desired outsourced H2 order/H2 truck payload)
+	+
+	IF THEN ELSE(
+	    Desired outsourced H2 order/H2 truck payload
+	    > INTEGER(Desired outsourced H2 order/H2 truck payload),
+	    1,
+	    0
+	)
+	~	truck
+	~		|
+
+Maximum feasible H2 trucks=INTEGER(max(0, Maximum outsourced storage capacity-Outsourced H2 inventory position\
+		)/H2 truck payload)
+	~	truck
+	~		|
+
+Maximum outsourced storage capacity=1200
+	~	kg
+	~		|
+
+H2 averaging time=24
+	~	H
+	~		|
+
+Outsourced H2 storage= INTEG (Outsourced H2 delivery-Outsourced H2 supplied,
+		800)
+	~	kg
+	~		|
+
+H2 in transit= INTEG (H2 in transit in-H2 in transit out,
+		0)
+	~	kg
+	~		|
+
+H2 in transit in=Outsourced H2 ordered
+	~	kg/H
+	~		|
+
+Effective outsourced H2 order up to level=min(Desired outsourced H2 order up to level\
+		,Maximum outsourced storage capacity)
+	~	kg
+	~		|
+
+H2 order quantity=H2 truck payload*H2 trucks per order
+	~	kg
+	~		|
+
+Outsourced H2 delivery=DELAY FIXED (Outsourced H2 ordered , H2 supplier lead time , 0\
+		 )
+	~	kg/H
+	~		|
+
+outsourced H2 delivery time=1
+	~	H
+	~		|
+
+Desired outsourced H2 order=max(0,Effective outsourced H2 order up to level-Outsourced H2 inventory position\
+		)
+	~	kg
+	~		|
+
+Desired outsourced H2 order up to level=Expected H2 outsourced demand*(H2 review period\
+		+H2 safety coverage time+H2 supplier lead time)
+	~	kg
+	~		|
+
+Outsourced H2 supplied=min(Residual H2 demand,Outsourced H2 storage/outsourced H2 delivery time\
+		)
+	~	kg/H
+	~		|
+
+H2 supplier lead time=12
+	~	H
+	~		|
+
+Expected H2 outsourced demand=SMOOTH (  Residual H2 demand, H2 averaging time )
+	~	kg/H
+	~		|
+
+First H2 order time=0
+	~	H
+	~		|
+
+Total H2 supplied=Outsourced H2 supplied+Internal H2 supplied
+	~	kg/H
+	~		|
+
+H2 order review=PULSE TRAIN ( First H2 order time , TIME STEP , H2 review period , FINAL TIME\
+		 )
+	~	Dmnl
+	~		|
+
+Outsourced H2 ordered=H2 order review*H2 order quantity/TIME STEP
+	~	kg/H
+	~		|
+
+H2 review period=24
+	~	H
+	~		|
+
+H2 safety coverage time=24
+	~	H
+	~		|
+
+Outsourced H2 inventory position=H2 in transit+Outsourced H2 storage
+	~	kg
+	~		|
+
+Specific electrolyser electricity consumption=50
+	~	kWh/kg
+	~		|
+
+COD load treated=COD concentration*treated wastewater/1000
+	~	kg/H
+	~		|
+
+Aeration efficiency=1.67
+	~	kg/kWh
+	~		|
+
+Aeration electricity consumption=O2 supplied from air/Aeration efficiency
+	~	kWh/H
+	~		|
+
+available H2O for electrolysis=recycled H2O in+potable H2O supplied
+	~	kg/H
+	~		|
+
+treated wastewater=Biological treatment
+	~	m3/H
+	~		|
+
+Baseline aeration electricity=WWTP O2 demand/Aeration efficiency
+	~	kWh/H
+	~		|
+
+clean water delivery time=1
+	~	H
+	~		|
+
+Reclaimed Water storage= INTEG (Reclaimed water production-Recycled water supply,
+		100)
+	~	m3
+	~		|
+
+Reclaimed water production=min(Treated water flow, Potential H2O consumption/water density\
+		)
+	~	m3/H
+	~		|
+
+Recycled water supply=min(
+	    Potential H2O consumption/water density,
+	   Reclaimed Water storage / clean water delivery time
+	)
+	~	m3/H
+	~		|
+
+COD concentration=500
+	~	mg/l
+	~		|
+
+wastewater in=Wastewater inflow
+	~	m3/H
+	~		|
+
+Treated water flow=Biological treatment
+	~	m3/H
+	~		|
+
+Dirty water storage= INTEG (wastewater in-treated wastewater,
+		400)
+	~	m3
+	~		|
+
+Biological treatment=Dirty water storage/wastewater treatment time
+	~	m3/H
+	~		|
+
+Wastewater inflow=400
+	~	m3/H
+	~		|
+
+WWTP O2 demand=COD load treated*Specific O2 requirement
+	~	kg/H
+	~		|
+
+O2 supplied from air=max(0, WWTP O2 demand - O2 from electrolysis used)
+	~	kg/H
+	~		|
+
+Specific O2 requirement=1
+	~	kg/kg
+	~		|
+
+O2 from electrolysis used=min(O2 produced,WWTP O2 demand)
+	~	kg/H
+	~		|
+
+Potable H2O demand=max(
+	    0,
+	    Potential H2O consumption - recycled H2O in
+	)
+	~	kg/H
+	~		|
+
+potable H2O supplied=Potable H2O demand
+	~	kg/H
+	~		|
+
+Unused O2=max(0, O2 produced - O2 from electrolysis used)
+	~	kg/H
+	~		|
+
+wastewater treatment time=1
+	~	H
+	~		|
+
+water density=1000
+	~	kg/m3
+	~		|
+
+Average production scenario 1=10.9395/24
+	~	kg/H
+	~		|
+
+H2 Storage= INTEG (H2 produced in-H2 demanded out,
+		500)
+	~	kg
+	~		|
+
+Max H2 Storage Capacity=500
+	~	kg
+	~		|
+
+"O2/H2 mass yield ratio"=8
+	~	kg/kg
+	~		|
+
+"H2O/H2 mass yield ratio"=9
+	~	kg/kg
+	~		|
+
+********************************************************
+	.Control
+********************************************************~
+		Simulation Control Parameters
+	|
+
+FINAL TIME  = 26208
+	~	Hour
+	~	The final time for the simulation.
+	|
+
+INITIAL TIME  = 0
+	~	Hour
+	~	The initial time for the simulation.
+	|
+
+SAVEPER  = 
+        TIME STEP
+	~	Hour [0,?]
+	~	The frequency with which output is stored.
+	|
+
+TIME STEP  = 1
+	~	Hour [0,?]
+	~	The time step for the simulation.
+	|
+
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*WWTP
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,90,2
+10,1,WWTP O2 demand,922,267,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,2,O2 produced,890,94,58,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,3,O2 from electrolysis used,721,173,62,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,4,2,3,1,0,0,0,0,192,0,-1--1--1,,1|(825,168)|
+1,5,1,3,1,0,0,0,0,192,0,-1--1--1,,1|(859,205)|
+10,6,O2 supplied from air,762,313,65,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,7,3,6,1,0,0,0,0,192,0,-1--1--1,,1|(711,257)|
+1,8,1,6,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,9,Unused O2,682,85,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,10,2,9,1,0,0,0,0,192,0,-1--1--1,,1|(783,43)|
+1,11,3,9,1,0,0,0,0,192,0,-1--1--1,,1|(711,125)|
+10,12,Wastewater inflow,1492,482,46,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,13,COD concentration,1195,234,53,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,14,COD load treated,1062,309,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,15,13,14,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,16,Specific O2 requirement,1044,207,49,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,17,16,1,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,18,14,1,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,19,Aeration efficiency,747,409,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,20,Aeration electricity consumption,592,356,69,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,21,6,20,1,0,0,0,0,192,0,-1--1--1,,1|(684,299)|
+1,22,19,20,1,0,0,0,0,192,0,-1--1--1,,1|(676,407)|
+10,23,Baseline aeration electricity,938,485,61,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,24,1,23,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,25,19,23,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,26,Dirty water storage,1243,535,46,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,27,48,1023,533,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,28,30,26,100,0,0,22,0,192,0,-1--1--1,,1|(1152,533)|
+1,29,30,27,4,0,0,22,0,192,0,-1--1--1,,1|(1064,533)|
+11,30,0,1102,533,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,31,treated wastewater,1102,567,56,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+12,32,48,1525,532,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,33,35,32,100,0,0,22,0,192,0,-1--1--1,,1|(1455,532)|
+1,34,35,26,4,0,0,22,0,192,0,-1--1--1,,1|(1336,532)|
+11,35,0,1389,532,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,36,wastewater in,1389,566,51,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+1,37,12,35,1,0,0,0,0,192,0,-1--1--1,,1|(1409,495)|
+10,38,Biological treatment,1194,640,48,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,39,26,38,1,0,0,0,0,192,0,-1--1--1,,1|(1235,600)|
+1,40,38,30,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,41,Treated water flow,980,666,53,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,42,38,41,1,0,0,0,0,192,0,-1--1--1,,1|(1095,678)|
+10,43,Reclaimed Water storage,689,545,47,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,44,48,918,544,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,45,47,44,100,0,0,22,0,192,0,-1--1--1,,1|(868,544)|
+1,46,47,43,4,0,0,22,0,192,0,-1--1--1,,1|(776,544)|
+11,47,0,822,544,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,48,Reclaimed water production,822,578,54,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+1,49,41,48,1,0,0,0,0,192,0,-1--1--1,,1|(895,647)|
+12,50,48,453,545,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,51,53,43,100,0,0,22,0,192,0,-1--1--1,,1|(600,545)|
+1,52,53,50,4,0,0,22,0,192,0,-1--1--1,,1|(504,545)|
+11,53,0,552,545,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,54,Recycled water supply,552,579,54,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+10,55,wastewater treatment time,1349,669,50,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,56,55,38,1,0,0,0,0,192,0,-1--1--1,,1|(1265,664)|
+10,57,Potential H2O consumption,663,661,51,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,58,clean water delivery time,425,679,50,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,59,58,54,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,60,57,54,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,61,43,54,1,0,0,0,0,192,0,-1--1--1,,1|(636,601)|
+1,62,30,14,1,0,0,0,0,192,0,-1--1--1,,1|(1133,438)|
+10,63,water density,570,732,52,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,64,63,54,1,0,0,0,0,192,0,-1--1--1,,1|(575,658)|
+1,65,57,48,1,0,0,0,0,192,0,-1--1--1,,1|(744,632)|
+1,66,63,48,1,0,0,0,0,192,0,-1--1--1,,1|(770,714)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Hydrogen production
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,100,2
+10,1,Electrolyzer throughput,1009,358,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,2,actual H2O consumption,673,602,65,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,3,"H2O/H2 mass yield ratio",959,605,52,26,8,3,0,26,-1,0,0,0,0-0-0,0-0-0,|11|BI|128-0-64,0,0,0,0,0,0
+1,4,3,2,1,0,0,0,0,192,0,-1--1--1,,1|(812,653)|
+10,5,Electrolyzer capacity,1115,400,64,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,6,TIME STEP,638,475,52,10,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,7,H2 Storage,522,326,46,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,8,48,706,323,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,9,11,8,100,0,0,22,0,192,0,-1--1--1,,1|(677,323)|
+1,10,11,7,4,0,0,22,0,192,0,-1--1--1,,1|(607,323)|
+11,11,0,653,323,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,12,H2 produced in,653,357,58,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+12,13,48,284,326,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,14,16,7,100,0,0,22,0,192,0,-1--1--1,,1|(432,326)|
+1,15,16,13,4,0,0,22,0,192,0,-1--1--1,,1|(335,326)|
+11,16,0,383,326,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,17,H2 demanded out,383,360,54,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+10,18,Max H2 Storage Capacity,766,460,37,37,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,19,5,1,1,0,0,0,0,192,0,-1--1--1,,1|(1059,365)|
+10,20,Operating factor,1028,259,62,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,21,20,1,1,0,0,0,0,192,0,-1--1--1,,1|(1029,316)|
+1,22,5,20,1,0,0,0,0,192,0,-1--1--1,,1|(1099,305)|
+10,23,Average production scenario 1,846,80,72,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,24,O2 produced,576,512,50,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,25,"O2/H2 mass yield ratio",525,621,53,26,8,3,0,26,-1,0,0,0,0-0-0,0-0-0,|11|BI|128-0-64,0,0,0,0,0,0
+1,26,25,24,1,0,0,0,0,192,0,-1--1--1,,1|(522,541)|
+10,27,Potential H2O consumption,1258,538,47,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,28,3,27,1,0,0,0,0,192,0,-1--1--1,,1|(1118,620)|
+10,29,available H2O for electrolysis,978,175,64,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,30,recycled H2O in,1176,284,59,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,31,30,29,1,0,0,0,0,192,0,-1--1--1,,1|(1092,212)|
+10,32,Recycled water supply,1153,169,58,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,33,water density,1184,359,60,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,34,32,30,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,35,33,30,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,36,potable H2O supplied,1270,142,48,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,37,36,29,1,0,0,0,0,192,0,-1--1--1,,1|(1146,109)|
+10,38,Potable H2O demand,1371,274,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,39,27,38,1,0,0,0,0,192,0,-1--1--1,,1|(1435,418)|
+1,40,30,38,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,41,38,36,1,0,0,0,0,192,0,-1--1--1,,1|(1336,198)|
+10,42,Specific electrolyser electricity consumption,348,553,73,36,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,43,Electrolyser electricity consumption,495,441,50,36,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,44,42,43,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,45,Internal H2 supplied,772,186,48,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,46,TIME STEP,880,528,49,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,47,29,11,1,0,0,0,0,192,0,-1--1--1,,1|(741,255)|
+1,48,3,12,1,0,0,0,0,192,0,-1--1--1,,1|(653,358)|
+1,49,11,43,1,0,0,0,0,192,0,-1--1--1,,1|(583,397)|
+1,50,12,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,51,12,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,52,45,17,1,0,0,0,0,192,0,-1--1--1,,1|(483,298)|
+10,53,Potential H2 production,870,375,47,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,54,1,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,55,18,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,56,45,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,57,46,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,58,7,53,1,0,0,0,0,192,0,-1--1--1,,1|(725,292)|
+1,59,53,27,1,0,0,0,0,192,0,-1--1--1,,1|(1018,519)|
+1,60,53,12,1,0,0,0,0,192,0,-1--1--1,,1|(767,380)|
+10,61,Recycled water allocation factor,1316,386,60,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,62,61,30,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,63,Electrolyzer capacity multiplier,1142,484,75,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,64,63,1,1,0,0,0,0,192,0,-1--1--1,,1|(1052,437)|
+10,65,Electrolizer H2 production BV,898,258,58,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,66,65,20,1,0,0,0,0,192,0,-1--1--1,,1|(974,294)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Hydrogen sypply
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,99,2
+10,1,Internal H2 supplied,1358,338,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,2,Residual H2 demand,1157,336,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,3,Outsourced H2 storage,961,429,57,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,4,outsourced H2 delivery time,1187,576,55,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+12,5,48,718,433,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,6,8,3,100,0,0,22,0,192,0,-1--1--1,,1|(855,433)|
+1,7,8,5,4,0,0,22,0,192,0,-1--1--1,,1|(761,433)|
+11,8,0,801,433,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,9,Outsourced H2 delivery,801,465,47,24,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+12,10,48,1166,433,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,11,13,10,100,0,0,22,0,192,0,-1--1--1,,1|(1133,433)|
+1,12,13,3,4,0,0,22,0,192,0,-1--1--1,,1|(1058,433)|
+11,13,0,1105,433,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,14,Outsourced H2 supplied,1105,467,57,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+1,15,2,14,1,0,0,0,0,192,0,-1--1--1,,1|(1092,431)|
+1,16,4,14,1,0,0,0,0,192,0,-1--1--1,,1|(1132,526)|
+1,17,3,14,1,0,0,0,0,192,0,-1--1--1,,1|(1019,494)|
+10,18,Total H2 supplied,1424,471,65,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,19,14,18,1,0,0,0,0,192,0,-1--1--1,,1|(1260,507)|
+10,20,Unmet H2 demand,1571,297,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,21,18,20,1,0,0,0,0,192,0,-1--1--1,,1|(1513,410)|
+10,22,Expected H2 outsourced demand,1106,241,74,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,23,2,22,1,0,0,0,0,192,0,-1--1--1,,1|(1121,298)|
+10,24,H2 averaging time,1212,140,50,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,25,24,22,1,0,0,0,0,192,0,-1--1--1,,1|(1135,146)|
+10,26,Desired outsourced H2 order up to level,885,266,73,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,27,22,26,1,0,0,0,0,192,0,-1--1--1,,1|(1000,303)|
+10,28,H2 supplier lead time,857,346,62,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,29,H2 review period,824,182,63,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,30,H2 safety coverage time,992,120,53,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,31,28,26,1,0,0,0,0,192,0,-1--1--1,,1|(872,325)|
+1,32,29,26,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,33,30,26,1,0,0,0,0,192,0,-1--1--1,,1|(984,207)|
+10,34,Effective outsourced H2 order up to level,704,300,75,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,35,26,34,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,36,Desired outsourced H2 order,635,447,72,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,37,Outsourced H2 inventory position,801,543,67,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,38,3,37,1,0,0,0,0,192,0,-1--1--1,,1|(904,527)|
+1,39,34,36,1,0,0,0,0,192,0,-1--1--1,,1|(661,366)|
+1,40,37,36,1,0,0,0,0,192,0,-1--1--1,,1|(684,497)|
+10,41,Required H2 trucks,418,429,48,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,42,H2 truck payload,486,350,63,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,43,42,41,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,44,36,41,1,0,0,0,0,192,0,-1--1--1,,1|(514,466)|
+10,45,Maximum feasible H2 trucks,513,541,68,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,46,Maximum outsourced storage capacity,473,638,71,36,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,47,46,45,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,48,37,45,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,49,42,45,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,50,H2 trucks per order,290,414,48,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,51,41,50,1,0,0,0,0,192,0,-1--1--1,,1|(353,443)|
+1,52,45,50,1,0,0,0,0,192,0,-1--1--1,,1|(392,500)|
+10,53,H2 order quantity,336,301,66,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,54,50,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,55,42,53,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,56,H2 order review,507,191,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,57,First H2 order time,416,113,52,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,58,29,56,1,0,0,0,0,192,0,-1--1--1,,1|(664,132)|
+1,59,57,56,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,60,TIME STEP,380,222,49,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,61,FINAL TIME,558,89,52,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,62,60,56,1,0,0,0,0,192,0,-1--1--1,,1|(437,191)|
+1,63,61,56,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,64,Outsourced H2 ordered,533,289,57,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,65,56,64,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,66,53,64,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,67,60,64,1,0,0,0,0,192,0,-1--1--1,,1|(436,264)|
+1,68,64,8,1,0,0,0,0,192,0,-1--1--1,,1|(677,401)|
+1,69,28,9,1,0,0,0,0,192,0,-1--1--1,,1|(809,425)|
+10,70,Maximum outsourced storage capacity,670,218,71,36,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,71,70,34,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,72,H2 in transit,888,664,54,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,73,48,1135,668,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,74,76,72,100,0,0,22,0,192,0,-1--1--1,,1|(984,668)|
+1,75,76,73,4,0,0,22,0,192,0,-1--1--1,,1|(1081,668)|
+11,76,0,1032,668,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,77,H2 in transit out,1032,702,61,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+12,78,48,601,662,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,79,81,78,100,0,0,22,0,192,0,-1--1--1,,1|(663,662)|
+1,80,81,72,4,0,0,22,0,192,0,-1--1--1,,1|(780,662)|
+11,81,0,721,662,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,82,H2 in transit in,721,696,60,26,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,||BI|0-0-0,0,0,0,0,0,0
+10,83,Outsourced H2 ordered,841,749,61,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,84,Outsourced H2 delivery,1223,707,61,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,85,83,82,1,0,0,0,0,192,0,-1--1--1,,1|(738,740)|
+1,86,84,77,1,0,0,0,0,192,0,-1--1--1,,1|(1121,748)|
+1,87,72,37,1,0,0,0,0,192,0,-1--1--1,,1|(860,579)|
+1,88,1,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,89,1,18,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,90,H2 Storage,1291,443,51,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,91,90,1,1,0,0,0,0,192,0,-1--1--1,,1|(1287,402)|
+10,92,Total H2 demand,1361,250,53,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,|||0-0-0,0,0,0,0,0,0
+10,93,Crematorium demand,1392,148,51,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,94,93,92,1,0,0,0,0,192,0,-1--1--1,,1|(1368,196)|
+10,95,Bakery demand,1507,193,61,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,96,95,92,1,0,0,0,0,192,0,-1--1--1,,1|(1436,252)|
+1,97,92,1,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,98,92,2,1,0,0,0,0,192,0,-1--1--1,,1|(1248,266)|
+1,99,92,20,1,0,0,0,0,192,0,-1--1--1,,1|(1441,287)|
+10,100,delivery time,1474,374,50,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+1,101,100,1,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,102,Crematorium hourly consumption,1364,40,78,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,103,Crematorium operating,1578,61,55,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,104,102,93,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,105,103,93,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*KPIs
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,68,2
+10,1,Electricity attributed to H2 production,822,579,57,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,2,Electrolyser electricity consumption,673,340,54,36,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,3,Aeration electricity consumption,1154,394,73,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,4,2,1,1,0,0,0,0,192,0,-1--1--1,,1|(687,501)|
+10,5,External H2 supply,866,783,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,6,Outsourced H2 supplied,730,757,61,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,7,6,5,1,0,0,0,0,192,0,-1--1--1,,1|(794,801)|
+10,8,Cumulative outsourced H2,911,921,55,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,9,48,739,915,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+11,10,0,794,915,6,8,2,3,0,0,1,0,0,0,0,0,0,0,0,0
+1,11,10,9,100,0,0,22,0,192,0,-1--1--1,,1|(768,915)|
+1,12,10,8,4,0,0,22,0,192,0,-1--1--1,,1|(828,915)|
+10,13,Outsourced H2 delivery,681,883,61,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,14,13,10,1,0,0,0,0,192,0,-1--1--1,,1|(792,911)|
+10,15,Cumulative unmet demand H2,1262,1006,68,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,16,48,1086,1010,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+11,17,0,1145,1010,6,8,2,3,0,0,1,0,0,0,0,0,0,0,0,0
+1,18,17,16,100,0,0,22,0,192,0,-1--1--1,,1|(1117,1010)|
+1,19,17,15,4,0,0,22,0,192,0,-1--1--1,,1|(1172,1010)|
+10,20,Unmet H2 demand,1098,1087,44,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,21,20,17,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,22,Cumulative met demand H2,1341,830,59,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,23,48,1163,821,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+11,24,0,1209,821,6,8,2,3,0,0,1,0,0,0,0,0,0,0,0,0
+1,25,24,23,100,0,0,22,0,192,0,-1--1--1,,1|(1188,821)|
+1,26,24,22,4,0,0,22,0,192,0,-1--1--1,,1|(1248,821)|
+10,27,Total H2 supplied,1091,765,40,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,28,27,24,1,0,0,0,0,192,0,-1--1--1,,1|(1167,780)|
+10,29,H2 service level,1459,929,58,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,30,22,29,1,0,0,0,0,192,0,-1--1--1,,1|(1407,859)|
+1,31,15,29,1,0,0,0,0,192,0,-1--1--1,,1|(1364,988)|
+10,32,Potable H2O share,1506,482,48,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,33,actual H2O consumption,1386,390,54,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,34,potable H2O supplied,1372,527,52,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,35,33,32,1,0,0,0,0,192,0,-1--1--1,,1|(1457,418)|
+1,36,34,32,1,0,0,0,0,192,0,-1--1--1,,1|(1449,527)|
+10,37,Internal H2 supplied,1768,471,48,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,38,Total H2 demand,1761,595,38,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,39,"Internal hydrogen supply contribution (%)",1949,536,69,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,40,37,39,1,0,0,0,0,192,0,-1--1--1,,1|(1865,475)|
+1,41,38,39,1,0,0,0,0,192,0,-1--1--1,,1|(1849,592)|
+10,42,External H2 supply,1739,726,49,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,43,"External hydrogen dependency (%)",1930,686,68,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,44,38,43,1,0,0,0,0,192,0,-1--1--1,,1|(1840,615)|
+1,45,42,43,1,0,0,0,0,192,0,-1--1--1,,1|(1827,720)|
+10,46,Treated water flow,1130,514,57,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,47,water density,903,300,60,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,48,recycled H2O in,1021,288,55,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,49,WWTP electricity allocated to electrolisys,985,427,62,36,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,50,46,49,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,51,47,49,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,52,48,49,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,53,3,49,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,54,49,1,1,0,0,0,0,192,0,-1--1--1,,1|(916,525)|
+10,55,Avoided areation electricity,285,775,63,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,56,Aeration efficiency,202,586,42,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,57,O2 from electrolysis used,414,608,77,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,58,56,55,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,59,57,55,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,60,Integrated system electricity,304,1074,64,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,61,Aeration electricity consumption,164,926,73,26,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,62,Electrolyser electricity consumption,433,892,54,36,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,63,61,60,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,64,62,60,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Crematorium Demand
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,100,2
+10,1,Hours of year,664,297,51,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,|||0-0-0,0,0,0,0,0,0
+10,2,Hour of day,725,227,46,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,|||0-0-0,0,0,0,0,0,0
+10,3,Day of week,700,109,46,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,|||0-0-0,0,0,0,0,0,0
+10,4,Time,475,206,31,16,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,5,4,1,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,6,4,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,7,4,3,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,8,Mortality seasonal index lookup,702,457,68,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,9,Mortality noise sd,360,428,56,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,10,Noise seed,527,497,46,26,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,||BI|128-0-64,0,0,0,0,0,0
+10,11,Weekly mortality noise,529,358,62,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,12,9,11,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,13,10,11,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,14,4,11,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,15,Crematorium activity factor,766,341,51,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,16,1,15,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,17,11,15,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,18,8,15,0,0,0,0,0,64,0,-1--1--1,,1|(0,0)|
+10,19,Average cremations per day,1396,317,73,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,20,H2 per cremation,1369,418,65,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,21,Crematorium hourly consumption,1276,515,74,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,22,Crematorium operating hours per day,1088,364,74,36,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,23,19,22,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,24,20,22,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,25,21,22,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,26,15,22,0,0,0,0,0,64,0,-1--1--1,,1|(0,0)|
+10,27,Crematorium operating days per week,998,78,70,36,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,28,Crematorium opening hour,1233,211,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,29,Crematorium operating,937,236,51,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,30,3,29,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,31,2,29,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,32,27,29,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,33,28,29,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,34,22,29,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+///---\\\
+:TABLE verification_baseline
+:TITLE verification_baseline
+:FONT Vensim Sans|12||0-0-0
+:VAR Outsourced H2 storage
+:DATASET 
+:VAR Outsourced H2 supplied
+:DATASET 
+:VAR Outsourced H2 ordered
+:DATASET 
+:VAR Unmet H2 demand
+:DATASET 
+
+:GRAPH Baseline
+:TITLE Hydrogen supply regime transition (baseline)
+:SCALE
+:VAR H2 Storage
+:DATASET 
+:LINE-WIDTH 1
+:SCALE
+:VAR Outsourced H2 storage
+:DATASET 
+:LINE-WIDTH 1
+:SCALE
+:VAR Outsourced H2 ordered
+:DATASET 
+:LINE-WIDTH 1
+:SCALE
+:VAR Outsourced H2 supplied
+:DATASET 
+:LINE-WIDTH 1
+:SCALE
+:VAR Unmet H2 demand
+:DATASET 
+:LINE-WIDTH 1
+
+:TABLE Kpis
+:TITLE Kpis
+:FONT Vensim Sans|12||0-0-0
+:VAR H2 produced in
+:DATASET 
+:VAR Total H2 demand
+:DATASET 
+:VAR Internal H2 supplied
+:DATASET 
+:VAR Outsourced H2 delivery
+:DATASET 
+:VAR H2 service level
+:DATASET 
+:VAR Potable H2O share
+:DATASET 
+:VAR Electrolyzer capacity
+:DATASET 
+:VAR Aeration electricity consumption
+:DATASET 
+:VAR Total electricity consumption
+:DATASET 
+:VAR %
+:DATASET 
+:VAR "Internal hydrogen supply contribution (%)"
+:DATASET 
+
+:GRAPH Scenario_1:_increase_demand
+:TITLE Hydrogen supply regime (increasing demand)
+:SCALE
+:VAR Unmet H2 demand
+:DATASET 
+:LINE-WIDTH 1
+:SCALE
+:VAR Outsourced H2 storage
+:DATASET 
+:LINE-WIDTH 1
+
+:TABLE BV1_Real_demand_for_three_years
+:TITLE BV1 Real demand for three years
+:FONT Vensim Sans|12||0-0-0
+:VAR Total H2 demand
+:DATASET 
+:VAR Crematorium demand
+:DATASET 
+:VAR H2 produced in
+:DATASET 
+:VAR Internal H2 supplied
+:DATASET 
+:VAR External H2 supply
+:DATASET 
+:VAR Unmet H2 demand
+:DATASET 
+:VAR H2 service level
+:DATASET 
+:VAR "Internal hydrogen supply contribution (%)"
+:DATASET 
+:VAR "External hydrogen dependency (%)"
+:DATASET 
+:VAR H2 Storage
+:DATASET 
+:VAR Outsourced H2 storage
+:DATASET 
+:VAR Outsourced H2 delivery
+:DATASET 
+:VAR Electrolyser electricity consumption
+:DATASET 
+:VAR Aeration electricity consumption
+:DATASET 
+:VAR Avoided areation electricity
+:DATASET 
+:VAR Integrated system electricity
+:DATASET 
+
+:TABLE BV1_Real_demand_for_three_years_0
+:TITLE BV1 Real demand for three years
+:FONT Vensim Sans|12||0-0-0
+:VAR Total H2 demand
+:DATASET 
+:VAR Crematorium demand
+:DATASET 
+:VAR H2 produced in
+:DATASET 
+:VAR Internal H2 supplied
+:DATASET 
+:VAR External H2 supply
+:DATASET 
+:VAR Unmet H2 demand
+:DATASET 
+:VAR H2 service level
+:DATASET 
+:VAR "Internal hydrogen supply contribution (%)"
+:DATASET 
+:VAR "External hydrogen dependency (%)"
+:DATASET 
+:VAR H2 Storage
+:DATASET 
+:VAR Outsourced H2 storage
+:DATASET 
+:VAR Outsourced H2 delivery
+:DATASET 
+:VAR Electrolyser electricity consumption
+:DATASET 
+:VAR Aeration electricity consumption
+:DATASET 
+:VAR Avoided areation electricity
+:DATASET 
+:VAR Integrated system electricity
+:DATASET 
+:L<%^E!@
+1:BV2A_E8_S500.vdfx
+1:BV2A_E7_S500.vdfx
+1:BV2A_E4_S500.vdfx
+1:BV2A_E4_S200.vdfx
+1:BV2b_ET_Sstep.vdfx
+1:BV2b_ET_S500.vdfx
+1:BV2b_ET_S200.vdfx
+1:BV2A_E8_S200.vdfx
+1:BV2A_E7_S200.vdfx
+1:BV2A_E6_S200.vdfx
+1:BV2A_E2_S200.vdfx
+1:BV2A_E1_S200.vdfx
+4:Time
+5:Electrolyzer capacity multiplier
+9:BV2A_E8_S500
+19:100,1
+24:0
+25:26208
+26:26208
+23:0
+15:0,0,0,0,0,0
+27:0,
+34:0,
+42:0
+72:0
+73:0
+95:0
+96:0
+97:0
+77:0
+78:0
+102:1
+93:0
+94:0
+92:0
+91:0
+90:0
+87:0
+75:
+43:
+103:8,8,8,3,8
+105:0,0,0,0,0,0,0,0,0,0
+104:Vensim Sans|12||0-0-0|0-0-0|-1--1--1|0-0-255|192-192-192|-1--1--1

@@ -1,0 +1,17 @@
+# Vensim simulation outputs (not published; reproducible from the .mdl files)
+*.vdf
+*.vdfx
+*.vdfl
+simulations/
+
+# Partner documents and working material (not public)
+_documentation/
+
+# Office temporary and lock files
+~$*
+*.tmp
+
+# Operating system files
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,2 @@
+Electrolyzer capacity multiplier = 1 + STEP(3, 8736) + STEP(4, 17472)
+Max H2 Storage Capacity = 200 + STEP(300, 17472)      (only BV2b_Sstep)

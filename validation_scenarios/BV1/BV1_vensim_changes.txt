@@ -1,0 +1,158 @@
+{ =====================================================================
+  DUTCH HUB – CHANGES FOR THE VALIDATION SCENARIOS (BV1)
+  Apply to a COPY of the corrected verification model (e.g. Dutch_Hub_BV.mdl).
+  Values: sheet "Data" of Dutch_Hub_data_and_crematorium_demand.xlsx
+  ===================================================================== }
+
+{ ---------------------------------------------------------------------
+  A. SIMULATION CONTROL  (modify)
+  --------------------------------------------------------------------- }
+
+FINAL TIME = 26208
+    Units: Hour
+    156 weeks = 3 years of 52 weeks. t = 0 is Monday 00:00 of week 1.
+
+TIME STEP = 1          (unchanged)
+SAVEPER = TIME STEP    (unchanged)
+
+
+{ ---------------------------------------------------------------------
+  B. ELECTROLYSER AND STORAGE  (modify values)
+  --------------------------------------------------------------------- }
+
+Electrolyzer H2 production BV = 1
+    Units: kg/H
+    NEW. H2Hub Twente, 5 Nov 2026. Continuous operation (assumption).
+
+Operating factor = Electrolyzer H2 production BV / Electrolyzer capacity
+    Units: Dmnl
+    MODIFY (was Average production scenario 1 / Electrolyzer capacity). Result = 0.905.
+    "Average production scenario 1" is no longer used; it can be deleted.
+
+Electrolyzer capacity multiplier = 1
+    Units: Dmnl
+    CHECK: must be 1 in BV1 (it was 25 in the last S3 run).
+
+Max H2 Storage Capacity = 200
+    Units: kg
+    MODIFY (was 300). Planned storage, H2Hub Twente, 5 Nov 2026.
+
+H2 Storage = INTEG(H2 produced in - H2 demanded out, 200)
+    Units: kg
+    MODIFY initial value only (was 299.544).
+
+
+{ ---------------------------------------------------------------------
+  C. BAKERY DEMAND  (replaces Aadorp)
+  --------------------------------------------------------------------- }
+
+Bakery demand = 1
+    Units: kg/H
+    RENAME "Aadorp demand" -> "Bakery demand" and change value (was 0.455813).
+    Bolletje pilot, H2Hub Twente, 5 Nov 2026. Continuous demand (assumption).
+
+Total H2 demand = Bakery demand + Crematorium demand
+    Units: kg/H
+    (updates automatically if you rename from the diagram)
+
+
+{ ---------------------------------------------------------------------
+  D. CREMATORIUM DEMAND  (new structure; replaces the constant 10.58)
+  --------------------------------------------------------------------- }
+
+{ D1. Calendar }
+
+Hour of year = MODULO(Time, 8736)
+    Units: H
+
+Hour of day = MODULO(Time, 24)
+    Units: H
+
+Day of week = MODULO(INTEGER(Time / 24), 7)
+    Units: Dmnl
+    0 = Monday ... 6 = Sunday
+
+{ D2. Seasonal mortality index (CBS) and weekly noise }
+
+Mortality seasonal index lookup(
+  [(0,0.8)-(8736,1.2)],
+  (0,1.1463),(168,1.1626),(336,1.1411),(504,1.1561),(672,1.1589),(840,1.1394),(1008,1.146),(1176,1.1521),(1344,1.1341),(1512,1.1426),(1680,1.0977),(1848,1.0656),(2016,1.0457),(2184,1.0116),(2352,0.9855),(2520,0.9818),(2688,0.961),(2856,0.9504),(3024,0.9494),(3192,0.9405),(3360,0.9406),(3528,0.9289),(3696,0.9187),(3864,0.9238),(4032,0.917),(4200,0.9231),(4368,0.9337),(4536,0.9149),(4704,0.9104),(4872,0.9181),(5040,0.8937),(5208,0.901),(5376,0.9024),(5544,0.9033),(5712,0.9038),(5880,0.9016),(6048,0.9116),(6216,0.9181),(6384,0.9387),(6552,0.9554),(6720,0.9795),(6888,0.9684),(7056,0.9837),(7224,0.9827),(7392,1.001),(7560,0.9961),(7728,1.0088),(7896,1.0233),(8064,1.044),(8232,1.0617),(8400,1.0785),(8568,1.045),(8736,1.1463))
+    Units: Dmnl
+    Sheet 4_Vensim, cell A72. CBS 70895ENG, weekly deaths 2015-2019 and 2023-2025.
+
+Mortality noise sd = 0.0436
+    Units: Dmnl
+    Sheet 3_Seasonality (sd of residuals between years).
+
+Noise seed = 1
+    Units: Dmnl
+
+Weekly mortality noise = SAMPLE IF TRUE(
+        MODULO(Time, 168) = 0,
+        RANDOM NORMAL(-3 * Mortality noise sd, 3 * Mortality noise sd, 0, Mortality noise sd, Noise seed),
+        0)
+    Units: Dmnl
+    New value at the start of each week, held constant during the week.
+
+Crematorium activity factor = Mortality seasonal index lookup(Hour of year) * (1 + Weekly mortality noise)
+    Units: Dmnl
+
+{ D3. Cremations and operating hours }
+
+Average cremations per day = 9
+    Units: cremation/Day
+    H2Hub Twente: typically 8-10 per day.
+
+H2 per cremation = 20
+    Units: kg/cremation
+    H2Hub Twente, current estimate.
+
+Crematorium hourly consumption = 10.58
+    Units: kg/H
+    H2 consumption per operating hour (H2HT). This replaces the old constant "Crematorium demand = 10.58".
+
+Crematorium operating hours per day = Average cremations per day * Crematorium activity factor
+        * H2 per cremation / Crematorium hourly consumption
+    Units: H
+    About 17 h on average (13.8-19 h over the year).
+
+Crematorium operating days per week = 6
+    Units: Dmnl
+
+Crematorium opening hour = 5
+    Units: H
+
+Crematorium operating = IF THEN ELSE(
+        Day of week < Crematorium operating days per week :AND: Hour of day >= Crematorium opening hour,
+        MAX(0, MIN(1, Crematorium opening hour + Crematorium operating hours per day - Hour of day)),
+        0)
+    Units: Dmnl
+    Fraction of each hour in operation (1 during full hours, between 0 and 1 in the last hour).
+
+{ D4. Demand }
+
+Crematorium demand = Crematorium hourly consumption * Crematorium operating
+    Units: kg/H
+    MODIFY: was the constant 10.58 (and the S1 growth formula in the comment, no longer needed).
+
+
+{ ---------------------------------------------------------------------
+  E. UNCHANGED (keep as in the corrected verification model)
+  --------------------------------------------------------------------- }
+  - H2 service level (corrected formula), Avoided aeration electricity,
+    Integrated system electricity, Electricity attributed to H2 production
+  - WWTP: Wastewater inflow 400, COD 500, Aeration efficiency 1.67, Specific O2 requirement 1
+  - Logistics: review 24 h, lead time 12 h, safety 24 h, averaging 24 h, truck 400 kg,
+    max outsourced storage 1200 kg, initial outsourced storage 800 kg
+  - Recycled water allocation factor = 1
+
+
+{ ---------------------------------------------------------------------
+  F. QUICK CHECKS AFTER THE RUN
+  --------------------------------------------------------------------- }
+  - Crematorium demand: 0 on Sundays, 10.58 kg/H from 05:00 for about 14-19 h on other days.
+  - Total H2 demand averaged over the run: about 7.4 kg/H.
+  - Internal hydrogen supply contribution averaged over the run: about 14 %.
+  - H2 service level at the end: 1 (no unmet demand).
+  (Exact values will differ slightly from the Python replica because Vensim's random
+   sequence is not the same, even with the same seed.)

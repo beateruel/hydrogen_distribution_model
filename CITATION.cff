@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this model, please cite it as below."
+type: software
+title: "Dutch Hub WWTP–electrolysis–hydrogen System Dynamics model (IS2H4C)"
+abstract: >-
+  System Dynamics model of the integrated wastewater treatment plant and renewable
+  hydrogen system of the Dutch Hub (H2Hub Twente): reclaimed water feeds an
+  electrolyser, electrolytic oxygen partially replaces aeration, and an external
+  supply with an order-up-to policy covers the demand not met on site. Includes the
+  baseline model, verification scenarios S1-S3 and validation scenarios BV1-BV3
+  documented in IS2H4C Deliverable D4.3, Section 5.3.
+authors:
+  - family-names: Royo
+    given-names: Beatriz
+    affiliation: "Zaragoza Logistics Center (ZLC)"
+    orcid: "https://orcid.org/0000-0001-8208-716X"
+version: "1.0"
+date-released: "2026-11-30"
+license: MIT
+keywords:
+  - system dynamics
+  - hydrogen
+  - electrolysis
+  - wastewater treatment
+  - industrial symbiosis
+  - Vensim
+references:
+  - type: report
+    title: "D4.3 Hub logistics and supply chain management"
+    authors:
+      - family-names: Royo
+        given-names: Beatriz
+      - family-names: de la Cruz
+        given-names: Maria Teresa
+      - family-names: Wang
+        given-names: Jiayun
+      - family-names: Korba
+        given-names: Akrivi
+    institution:
+      name: "IS2H4C project, grant agreement No 101138473"
+    year: 2027
