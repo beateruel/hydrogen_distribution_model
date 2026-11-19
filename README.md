@@ -2,7 +2,7 @@
 
 System Dynamics model of the integrated wastewater treatment plant (WWTP) and renewable hydrogen system of the Dutch Hub (H2Hub Twente). Reclaimed water from the WWTP feeds an electrolyser, electrolytic oxygen partially replaces WWTP aeration, an on-site store buffers hydrogen production, and an external supply with an order-up-to policy covers the demand not met on site. The model runs at hourly resolution and reports hydrogen supply, resource circularity and electricity indicators.
 
-The model was developed in Work Package 4 of the IS2H4C project and is documented in Deliverable D4.3 *Hub logistics and supply chain management*, Section 5.3 and Appendix 2.
+The model was developed in Work Package 4 of the IS2H4C project and is documented in Deliverable D4.3 *Hub logistics and supply chain management*.
 
 ## Repository contents
 
